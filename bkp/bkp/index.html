@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kureumaru RPG Tasks v1.0b</title>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="game-header">
+            <h1 id="mainTitle">Kureumaru RPG Tasks v1.0b</h1>
+            <!-- Player Info Header and Attributes will be moved into statsPage -->
+        </header>
+        <div class="main-content">
+            <div id="statsPage">
+                <div class="player-info-header"> 
+                    <div class="portrait-container">
+                        <img id="charPortrait" src="char.png" alt="Character Portrait">
+                    </div>
+                    <div id="playerStats" class="player-stats">
+                        <div class="player-level-display">Level: <span id="playerLevel">1</span></div>
+                        <div class="hp-bar-container"> <!-- HP Bar Added -->
+                            <div id="hpBarFill" class="hp-bar-fill"></div>
+                            <div id="hpBarText" class="hp-bar-text">HP: <span id="playerCurrentHP">50</span>/<span id="playerMaxHP">50</span></div>
+                        </div>
+                        <div class="xp-bar-container">
+                            <div id="xpBarFill" class="xp-bar-fill"></div>
+                            <div id="xpBarText" class="xp-bar-text">XP: <span id="playerXP">0</span>/<span id="xpToNextLevel">100</span></div>
+                        </div>
+                        <div class="player-gold-display">Gold: <span id="playerGold">0</span></div>
+                    </div>
+                </div>
+                <div id="playerAttributes" class="player-attributes">
+                    <h3>Attributes</h3>
+                    <ul>
+                        <li>
+                            <span class="stat-name">Strength: <span id="playerStrengthVal">5</span></span>
+                            <div class="stat-bar-container"><div id="strengthStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                        <li>
+                            <span class="stat-name">Dexterity: <span id="playerDexterityVal">5</span></span>
+                            <div class="stat-bar-container"><div id="dexterityStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                        <li>
+                            <span class="stat-name">Vitality: <span id="playerVitalityVal">5</span></span>
+                            <div class="stat-bar-container"><div id="vitalityStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                        <li>
+                            <span class="stat-name">Intelligence: <span id="playerIntelligenceVal">5</span></span>
+                            <div class="stat-bar-container"><div id="intelligenceStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                        <li>
+                            <span class="stat-name">Wisdom: <span id="playerWisdomVal">5</span></span>
+                            <div class="stat-bar-container"><div id="wisdomStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                        <li>
+                            <span class="stat-name">Charisma: <span id="playerCharismaVal">5</span></span>
+                            <div class="stat-bar-container"><div id="charismaStatBar" class="stat-bar-fill"></div></div>
+                        </li>
+                    </ul>
+                </div>
+                <button id="viewTasksBtn">Quests</button> <!-- Added Quests Button -->
+            </div>
+            <div id="tasksPage" class="page-hidden">
+                <div class="task-management">
+                    <h2>Bounties & Quests</h2>
+                    <button id="backToStatsBtn">Back to Stats</button> <!-- Added Back Button -->
+                    <div class="input-area">
+                    <input type="text" id="taskName" placeholder="Enter task name">
+                    <select id="taskDifficulty">
+                        <option value="VeryEasy">Very Easy</option>
+                        <option value="Easy" selected>Easy</option> 
+                        <option value="Normal">Normal</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                        <option value="Challenging">Challenging</option>
+                        <option value="Legendary">Legendary</option>
+                    </select>
+                    <label for="taskStatType" class="select-label">Stat Focus:</label>
+                    <select id="taskStatType">
+                        <option value="strength">💪 Strength</option>
+                        <option value="dexterity">🤸 Dexterity</option>
+                        <option value="vitality">❤️ Vitality</option>
+                        <option value="intelligence">🧠 Intelligence</option>
+                        <option value="wisdom">🦉 Wisdom</option>
+                        <option value="charisma">✨ Charisma</option>
+                        <option value="none" selected>➖ None</option> 
+                    </select>
+                    <label for="taskCategory" class="select-label">Category:</label>
+                    <select id="taskCategory">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                    <label for="taskIcon" class="select-label">Icon:</label>
+                    <select id="taskIcon">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                    <label for="taskNameColor" class="color-picker-label">Color:</label>
+                    <input type="color" id="taskNameColor" value="#5d4037">
+                    
+                    <div class="file-input-container">
+                        <label for="taskImageUpload" class="select-label">Task Image (Optional):</label>
+                        <input type="file" id="taskImageUpload" accept="image/*">
+                        <img id="taskImagePreview" class="hidden" src="#" alt="Image Preview">
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="taskBonusToggle">
+                        <label for="taskBonusToggle">Bonus Task? (+20% XP/Gold)</label>
+                    </div>
+                    <div class="checkbox-container">
+                        <input type="checkbox" id="isNegativeTask">
+                        <label for="isNegativeTask">Negative Task? (Penalty)</label>
+                    </div>
+
+                    <button id="addTaskBtn">Accept Quest</button>
+                </div>
+                <div class="filter-area">
+                    <label for="filterCategory" class="select-label">Filter by Category:</label>
+                    <select id="filterCategory">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div class="tasks-area">
+                    <h3>Open Quests</h3>
+                    <ul id="taskList">
+                        <!-- Tasks will be listed here -->
+                    </ul>
+                </div>
+            </div> <!-- Closing task-management -->
+            </div> <!-- Closing tasksPage -->
+            <div class="game-controls">
+                <button id="resetGameBtn" class="control-button">Reset Game Data</button>
+            </div>
+        </div> 
+    </div> 
+
+    <div id="levelUpNotification" class="level-up-notification hidden">
+        Level Up!
+    </div>
+    <div id="taskCompletePopup" class="task-complete-popup hidden">
+        <h4 id="popupTaskName"></h4>
+        <p id="popupRewards"></p>
+        <!-- OK button was here, now removed for auto-hide -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

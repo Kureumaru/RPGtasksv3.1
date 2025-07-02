@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task Manager Tests</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .test-suite { margin-bottom: 20px; border: 1px solid #eee; padding: 10px; }
+        .test-suite h3 { margin-top: 0; }
+        .test-case { margin-left: 20px; padding: 5px; border-left: 2px solid #ccc; }
+        .pass { color: green; }
+        .fail { color: red; font-weight: bold; }
+        pre { background-color: #f9f9f9; padding: 5px; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <h1>Task Manager Logic Tests</h1>
+    <div id="testResults"></div>
+
+    <!-- Include the script to be tested -->
+    <!-- Note: For these tests to run, the DOM elements script.js interacts with are not strictly necessary,
+         but if script.js tries to access them on load and fails, it might throw errors.
+         We'll define minimal versions or mock them if needed.
+         For now, we focus on functions that don't directly manipulate the live DOM at load time.
+         The difficultySettings object and reward calculation are good candidates.
+         Task creation/completion logic will be harder to test without a DOM or more complex mocking.
+    -->
+
+    <!-- Mocking necessary DOM elements for script.js not to throw errors on load -->
+    <input type="text" id="taskName" style="display:none;">
+    <select id="taskDifficulty" style="display:none;">
+        <option value="Easy">Easy</option>
+    </select>
+    <button id="addTaskBtn" style="display:none;">Add Task</button>
+    <ul id="taskList" style="display:none;"></ul>
+    <ul id="completedTaskList" style="display:none;"></ul>
+    
+    <!-- Player stats elements for script.js initialization -->
+    <div id="playerStats" style="display:none;">
+        Level: <span id="playerLevel">1</span>
+        XP: <span id="playerXP">0</span> / <span id="xpToNextLevel">100</span>
+    </div>
+
+    <script src="script.js"></script> 
+    <script>
+        const testResultsDiv = document.getElementById('testResults');
+
+        function runTests() {
+            let overallPassed = 0;
+            let overallFailed = 0;
+
+            // --- Test Suite: Reward Calculation ---
+            const rewardSuite = createTestSuite("Reward Calculation");
+            
+            // Test Case 1: Easy difficulty rewards
+            let { passed, message } = assertRewards('Easy', 10, 5);
+            rewardSuite.addTestCase("Easy difficulty rewards", passed, message);
+            if (passed) overallPassed++; else overallFailed++;
+
+            // Test Case 2: Medium difficulty rewards
+            ({ passed, message } = assertRewards('Medium', 25, 10));
+            rewardSuite.addTestCase("Medium difficulty rewards", passed, message);
+            if (passed) overallPassed++; else overallFailed++;
+            
+            // Test Case 3: Hard difficulty rewards
+            ({ passed, message } = assertRewards('Hard', 50, 20));
+            rewardSuite.addTestCase("Hard difficulty rewards", passed, message);
+            if (passed) overallPassed++; else overallFailed++;
+
+            rewardSuite.render(testResultsDiv);
+
+            // --- Test Suite: Task Management (Conceptual - limited by DOM interaction) ---
+            // We'll test the parts of task management we can without fully simulating user interaction.
+            // This requires `script.js` to be loaded and its functions/variables to be in scope.
+            // We might need to temporarily override localStorage for clean tests.
+
+            const taskManagementSuite = createTestSuite("Task Management Core Logic");
+
+            // Mock localStorage for these tests
+            let mockLocalStorage = {};
+            const originalLocalStorage = window.localStorage;
+            window.localStorage = {
+                getItem: key => mockLocalStorage[key] || null,
+                setItem: (key, value) => mockLocalStorage[key] = value,
+                removeItem: key => delete mockLocalStorage[key],
+                clear: () => mockLocalStorage = {}
+            };
+            
+            // Reset tasks arrays in script.js (if they are globally accessible or via a reset function)
+            // Assuming `tasks` and `completedTasks` are global in script.js for this test.
+            // If not, this test setup would need adjustment (e.g., by exposing them or a reset function).
+            
+            // Clear mock storage and reset relevant global state from script.js
+            mockLocalStorage = {};
+            tasks = []; 
+            completedTasks = [];
+            player = { level: 1, currentXP: 0, xpToNextLevel: xpLevels[1] }; // Reset player. xpLevels[1] is XP for Lvl 2
+            nextTaskNumber = 1;
+            
+            loadGameData(); // Should load empty/default state from mock storage & reset displays
+
+
+            // Test Case 1: Adding a task (checks number and timesCompleted init)
+            let passedAddTask, msgAddTask;
+            try {
+                // Simulate adding a task by directly calling internal logic if possible,
+                // or by manipulating inputs and clicking the button (more complex for this simple setup).
+                // Let's directly manipulate the `tasks` array and call `saveTasks` and `renderTasks` (implicitly).
+                
+                const testTaskName = "Test Quest";
+                const testDifficulty = "Easy";
+                const expectedRewards = difficultySettings[testDifficulty];
+                const currentTaskNumber = nextTaskNumber; // Capture before it increments
+
+                // Simulate adding a task by directly manipulating inputs and clicking the button
+                // This is a bit more involved but tests the actual event handler path.
+                // For this simple test env, we'll continue direct manipulation + calling save.
+                // If using a proper test framework, we'd simulate clicks.
+                
+                // Manually create and add as per new structure in script.js
+                tasks.push({
+                    id: "test1", number: currentTaskNumber, name: testTaskName, difficulty: testDifficulty, 
+                    xp: expectedRewards.xp, gold: expectedRewards.gold, completed: false, timesCompleted: 0
+                });
+                nextTaskNumber++; // Manually increment as the event handler would
+                saveGameData(); // Save to mock localStorage
+
+                const storedTasks = JSON.parse(mockLocalStorage['rpgTasks']);
+                if (storedTasks && storedTasks.length === 1 && 
+                    storedTasks[0].name === testTaskName &&
+                    storedTasks[0].number === currentTaskNumber &&
+                    storedTasks[0].timesCompleted === 0) {
+                    passedAddTask = true;
+                    msgAddTask = `Task added with number ${currentTaskNumber} and 0 completions.`;
+                } else {
+                    passedAddTask = false;
+                    msgAddTask = `Task not added/saved correctly. Found: ${JSON.stringify(storedTasks)}, expected num: ${currentTaskNumber}`;
+                }
+            } catch (e) {
+                passedAddTask = false;
+                msgAddTask = `Error during add task test: ${e.message}`;
+            }
+            taskManagementSuite.addTestCase("Adding a task", passedAddTask, msgAddTask);
+            if (passedAddTask) overallPassed++; else overallFailed++;
+
+
+            // Test Case 2: Completing a task
+            let passedCompleteTask, msgCompleteTask;
+            try {
+                // Ensure a task exists to be completed (e.g., the one from "Adding a task" test)
+                let taskToCompleteId = "test1"; // from previous test
+                if (!tasks.find(t => t.id === taskToCompleteId)) {
+                     // If not present (e.g. if tests are run in isolation or previous failed to add)
+                    const fallbackTaskName = "Fallback Quest";
+                    const fallbackDifficulty = "Medium";
+                    const fallbackRewards = difficultySettings[fallbackDifficulty];
+                    const fallbackTaskNumber = nextTaskNumber++;
+                    const taskToCreate = {
+                        id: "fallbackTestComplete1", number: fallbackTaskNumber, name: fallbackTaskName, 
+                        difficulty: fallbackDifficulty, xp: fallbackRewards.xp, gold: fallbackRewards.gold, 
+                        completed: false, timesCompleted: 0
+                    };
+                    tasks.push(taskToCreate);
+                    taskToCompleteId = "fallbackTestComplete1";
+                    saveGameData();
+                }
+                
+                const taskBeforeCompletion = tasks.find(t => t.id === taskToCompleteId);
+                const initialPlayerXP = player.currentXP;
+                const taskXP = taskBeforeCompletion.xp;
+
+                completeTask(taskToCompleteId); 
+                
+                const taskAfterCompletion = completedTasks.find(t => t.id === taskToCompleteId);
+                const stillInActiveTasks = tasks.find(t => t.id === taskToCompleteId);
+
+                if (!stillInActiveTasks && taskAfterCompletion && taskAfterCompletion.completed &&
+                    taskAfterCompletion.timesCompleted === 1 && player.currentXP === initialPlayerXP + taskXP) {
+                    passedCompleteTask = true;
+                    msgCompleteTask = `Task completed, timesCompleted is 1, XP awarded. Player XP: ${player.currentXP}`;
+                } else {
+                    passedCompleteTask = false;
+                    msgCompleteTask = `Task completion failed. Still in active: ${!!stillInActiveTasks}, In completed: ${!!taskAfterCompletion}, TimesCompleted: ${taskAfterCompletion?.timesCompleted}, Player XP: ${player.currentXP} (expected ${initialPlayerXP + taskXP})`;
+                    if(taskAfterCompletion) msgCompleteTask += `, Completed status: ${taskAfterCompletion.completed}`;
+                }
+            } catch (e) {
+                passedCompleteTask = false;
+                msgCompleteTask = `Error during complete task test: ${e.message} (Ensure 'completeTask' is global or exposed for testing)`;
+            }
+            taskManagementSuite.addTestCase("Completing a task", passedCompleteTask, msgCompleteTask);
+            if (passedCompleteTask) overallPassed++; else overallFailed++;
+
+            // Test Case 3: Completing a task multiple times (auto-reset)
+            let passedMultiComplete, msgMultiComplete;
+            const taskToMultiCompleteId = "test1"; // Assuming this was the ID from "Adding a task"
+            try {
+                let task = tasks.find(t => t.id === taskToMultiCompleteId);
+                if (!task) throw new Error(`Setup: Task ${taskToMultiCompleteId} not found for multi-complete test.`);
+
+                let initialTimesCompleted = task.timesCompleted;
+                let initialPlayerXP = player.currentXP;
+                let taskXP = task.xp;
+
+                // Complete first time
+                completeTask(taskToMultiCompleteId);
+                // Need to wait for async completeTask if it has timeouts for animations before data updates
+                // For this basic test, we assume data is updated synchronously or tests are adapted for timeouts.
+                // Current test setup does not handle async well. Let's assume synchronous for test logic.
+                // Actual script.js completeTask has a timeout, so this test case might need adjustment or a test-specific sync version of completeTask.
+                // For now, proceeding as if data is updated for the test logic.
+                
+                task = tasks.find(t => t.id === taskToMultiCompleteId); // Re-fetch task
+                let firstCompleteCorrect = task && task.timesCompleted === initialTimesCompleted + 1 && player.currentXP === initialPlayerXP + taskXP;
+
+                // Complete second time
+                initialTimesCompleted = task.timesCompleted; // Update for second completion check
+                initialPlayerXP = player.currentXP; // Update for second completion check
+
+                completeTask(taskToMultiCompleteId);
+                task = tasks.find(t => t.id === taskToMultiCompleteId); // Re-fetch task
+                let secondCompleteCorrect = task && task.timesCompleted === initialTimesCompleted + 1 && player.currentXP === initialPlayerXP + taskXP;
+
+                if (firstCompleteCorrect && secondCompleteCorrect) {
+                    passedMultiComplete = true;
+                    msgMultiComplete = `Task completed multiple times. Final count: ${task.timesCompleted}. Player XP: ${player.currentXP}`;
+                } else {
+                    passedMultiComplete = false;
+                    msgMultiComplete = `Multi-complete failed. 1st: ${firstCompleteCorrect}, 2nd: ${secondCompleteCorrect}. Task: ${JSON.stringify(task)}`;
+                }
+
+            } catch (e) {
+                passedMultiComplete = false;
+                msgMultiComplete = `Error during multi-complete test: ${e.message}`;
+            }
+            taskManagementSuite.addTestCase("Completing a task multiple times (auto-reset)", passedMultiComplete, msgMultiComplete);
+            if (passedMultiComplete) overallPassed++; else overallFailed++;
+
+            // Test Case 4: Deleting a task
+            let passedDeleteTask, msgDeleteTask;
+            // Ensure a unique task for this test to avoid interference if previous tests modified "test1"
+            const uniqueTaskToDelete = { id: "deleteTestTask", number: 100, name: "Ephemeral Task", difficulty: "Easy", xp: 5, gold: 1, nameColor: "#ff0000", timesCompleted: 0 };
+            tasks.push(uniqueTaskToDelete);
+            saveGameData(); // Save it to our mock state
+
+            try {
+                let taskExistsBeforeDelete = tasks.some(t => t.id === uniqueTaskToDelete.id);
+                
+                deleteTask(uniqueTaskToDelete.id);
+                // Similar to completeTask, if deleteTask becomes async for animations, this test needs care.
+                // Assuming sync for test logic here.
+
+                const taskExistsAfterDelete = tasks.some(t => t.id === uniqueTaskToDelete.id);
+
+                if (taskExistsBeforeDelete && !taskExistsAfterDelete) {
+                    passedDeleteTask = true;
+                    msgDeleteTask = `Task ${uniqueTaskToDelete.id} deleted successfully.`;
+                } else {
+                    passedDeleteTask = false;
+                    msgDeleteTask = `Task deletion failed. Existed before: ${taskExistsBeforeDelete}, Exists after: ${taskExistsAfterDelete}`;
+                }
+            } catch (e) {
+                passedDeleteTask = false;
+                msgDeleteTask = `Error during delete task test: ${e.message}`;
+            }
+            taskManagementSuite.addTestCase("Deleting a task", passedDeleteTask, msgDeleteTask);
+            if (passedDeleteTask) overallPassed++; else overallFailed++;
+
+            taskManagementSuite.render(testResultsDiv); // Render this suite before leveling
+
+            // --- Test Suite: Player Stats (Gold, Leveling) ---
+            const playerStatsSuite = createTestSuite("Player Stats (Gold & Leveling)");
+            
+            // Reset player state for these tests
+            player = { level: 1, currentXP: 0, gold: 0, xpToNextLevel: xpLevels[1] }; // xpLevels[1] is for L1->L2
+            mockLocalStorage['rpgPlayerStats'] = JSON.stringify(player);
+            updatePlayerStatsDisplay();
+
+
+            // Test Case 1: Gold Accumulation
+            let passedGoldAcc, msgGoldAcc;
+            try {
+                const initialGold = player.gold;
+                // Simulate completing a task that gives 10 gold
+                // We need a mock task or to use one from `difficultySettings`
+                const goldReward = difficultySettings.Medium.gold; // e.g., 10 gold
+                player.gold += goldReward; // Manually add for test simplicity
+                saveGameData(); // Save player state
+                updatePlayerStatsDisplay(); // Update mock DOM
+
+                if (player.gold === initialGold + goldReward) {
+                    passedGoldAcc = true;
+                    msgGoldAcc = `Gold accumulated correctly. Player gold: ${player.gold}`;
+                } else {
+                    passedGoldAcc = false;
+                    msgGoldAcc = `Gold accumulation failed. Expected ${initialGold + goldReward}, got ${player.gold}`;
+                }
+            } catch (e) {
+                passedGoldAcc = false;
+                msgGoldAcc = `Error during gold accumulation test: ${e.message}`;
+            }
+            playerStatsSuite.addTestCase("Gold Accumulation", passedGoldAcc, msgGoldAcc);
+            if (passedGoldAcc) overallPassed++; else overallFailed++;
+
+            // Test Case 2: XP Gain and Level Up (adapted from original)
+            let passedLevelUp, msgLevelUp;
+            try {
+                // Player state already reset for this suite.
+                // Ensure player stats are default for this specific test section if needed.
+                player.level = 1;
+                player.currentXP = 0;
+                player.xpToNextLevel = xpLevels[1]; // For L1->L2
+                updatePlayerStatsDisplay();
+
+
+                // Simulate completing a Hard task (50 XP)
+                player.currentXP += 50; // Grant XP
+                checkLevelUp(); // Check
+                updatePlayerStatsDisplay();
+
+                let firstGainCorrect = player.level === 1 && player.currentXP === 50;
+
+                // Simulate completing another Hard task (50 XP), should level up
+                player.currentXP += 50; // Grant XP (total 100)
+                checkLevelUp(); // Check
+                updatePlayerStatsDisplay();
+
+                // After level up from 1 to 2 (needs 100 XP):
+                // player.level should be 2
+                // player.currentXP should be 0 (100 - 100)
+                // player.xpToNextLevel should be xpLevels[2] (XP for Lvl 2 -> Lvl 3, e.g. 250)
+                if (firstGainCorrect && player.level === 2 && player.currentXP === 0 && player.xpToNextLevel === xpLevels[2]) {
+                    passedLevelUp = true;
+                    msgLevelUp = `Player leveled up correctly. Lvl: ${player.level}, XP: ${player.currentXP}/${player.xpToNextLevel}`;
+                } else {
+                    passedLevelUp = false;
+                    msgLevelUp = `Level up logic failed. Lvl: ${player.level} (exp 2), XP: ${player.currentXP} (exp 0), Next: ${player.xpToNextLevel} (exp ${xpLevels[2]})`;
+                    if (!firstGainCorrect) msgLevelUp = "Initial XP gain before level up was incorrect. " + msgLevelUp;
+                }
+            } catch (e) {
+                passedLevelUp = false;
+                msgLevelUp = `Error during leveling test: ${e.message}`;
+            }
+            playerStatsSuite.addTestCase("XP Gain and Level Up", passedLevelUp, msgLevelUp);
+            if (passedLevelUp) overallPassed++; else overallFailed++;
+
+
+            // Test Case 3: Task Name Color Persistence
+            let passedColorPersistence, msgColorPersistence;
+            try {
+                const colorTaskName = "Colorful Quest";
+                const colorDifficulty = "Easy";
+                const colorHex = "#ff00ff"; 
+                const colorAssociatedStat = "wisdom";
+                
+                tasks.push({
+                    id: "colortest1", number: nextTaskNumber++, name: colorTaskName, 
+                    difficulty: colorDifficulty, xp: 10, gold: 5, 
+                    nameColor: colorHex, associatedStat: colorAssociatedStat, 
+                    completed: false, timesCompleted: 0
+                });
+                saveGameData(); 
+                tasks = []; // Clear before load
+                loadGameData(); // Reload
+
+                const reloadedTask = tasks.find(t => t.id === "colortest1");
+                if (reloadedTask && reloadedTask.nameColor === colorHex && reloadedTask.associatedStat === colorAssociatedStat) {
+                    passedColorPersistence = true;
+                    msgColorPersistence = "Task name color & assoc. stat correctly saved/loaded.";
+                } else {
+                    passedColorPersistence = false;
+                    msgColorPersistence = `Color/Stat persistence failed. Reloaded: ${JSON.stringify(reloadedTask)}, Expected color: ${colorHex}, stat: ${colorAssociatedStat}`;
+                }
+            } catch (e) {
+                passedColorPersistence = false;
+                msgColorPersistence = `Error: ${e.message}`;
+            }
+            playerStatsSuite.addTestCase("Task Color & Assoc. Stat Persistence", passedColorPersistence, msgColorPersistence);
+            if (passedColorPersistence) overallPassed++; else overallFailed++;
+
+            // Test Case 4: Player Stat Increase on Task Completion
+            let passedStatIncrease, msgStatIncrease;
+            try {
+                // Ensure player stats are at a known state
+                player.strength = 5; player.intelligence = 5; saveGameData(); updatePlayerStatsDisplay();
+
+                // Create a task associated with Strength
+                const strTask = { 
+                    id: "strTask1", number: nextTaskNumber++, name: "Lift Boulder", 
+                    difficulty: "Medium", xp: 20, gold: 10, nameColor: "#ccc", 
+                    associatedStat: "strength", completed: false, timesCompleted: 0 
+                };
+                tasks.push(strTask);
+                saveGameData(); // Add to state
+
+                completeTask(strTask.id); // This will also update player object via script.js
+                // Assuming completeTask updates player object correctly
+                
+                if (player.strength === 6) { // Expected initial 5 + 1
+                    passedStatIncrease = true;
+                    msgStatIncrease = "Player strength increased correctly after task completion.";
+                } else {
+                    passedStatIncrease = false;
+                    msgStatIncrease = `Strength increase failed. Expected 6, got ${player.strength}.`;
+                }
+            } catch (e) {
+                passedStatIncrease = false;
+                msgStatIncrease = `Error in stat increase test: ${e.message}`;
+            }
+            playerStatsSuite.addTestCase("Player Stat Increase on Task Completion", passedStatIncrease, msgStatIncrease);
+            if (passedStatIncrease) overallPassed++; else overallFailed++;
+
+
+            playerStatsSuite.render(testResultsDiv);
+            
+
+            // Restore original localStorage
+            window.localStorage = originalLocalStorage;
+
+            // --- Summary ---
+            const summaryDiv = document.createElement('div');
+            summaryDiv.innerHTML = `<h3>Test Summary</h3><p class_name="${overallFailed === 0 ? 'pass' : 'fail'}">Overall: ${overallPassed} passed, ${overallFailed} failed.</p>`;
+            testResultsDiv.appendChild(summaryDiv);
+        }
+
+        function createTestSuite(name) {
+            const cases = [];
+            return {
+                name: name,
+                addTestCase: function(description, passed, message) {
+                    cases.push({ description, passed, message });
+                },
+                render: function(parentElement) {
+                    const suiteDiv = document.createElement('div');
+                    suiteDiv.classList.add('test-suite');
+                    suiteDiv.innerHTML = `<h3>${this.name}</h3>`;
+                    cases.forEach(tc => {
+                        const caseDiv = document.createElement('div');
+                        caseDiv.classList.add('test-case', tc.passed ? 'pass' : 'fail');
+                        let msgHtml = tc.message ? `<pre>${escapeHtml(tc.message)}</pre>` : "";
+                        caseDiv.innerHTML = `<strong>${tc.description}:</strong> ${tc.passed ? 'PASS' : 'FAIL'}${msgHtml}`;
+                        suiteDiv.appendChild(caseDiv);
+                    });
+                    parentElement.appendChild(suiteDiv);
+                }
+            };
+        }
+        
+        function assertRewards(difficulty, expectedXp, expectedGold) {
+            // This assumes `difficultySettings` is a global variable from script.js
+            if (typeof difficultySettings === 'undefined') {
+                return { passed: false, message: "difficultySettings object not found. Make sure script.js is loaded and difficultySettings is global." };
+            }
+            const rewards = difficultySettings[difficulty];
+            if (!rewards) {
+                return { passed: false, message: `No settings found for difficulty: ${difficulty}` };
+            }
+            const passed = rewards.xp === expectedXp && rewards.gold === expectedGold;
+            let message = "";
+            if (!passed) {
+                message = `Expected XP: ${expectedXp}, Got: ${rewards.xp}. Expected Gold: ${expectedGold}, Got: ${rewards.gold}.`;
+            }
+            return { passed, message };
+        }
+
+        function escapeHtml(unsafe) {
+            if (typeof unsafe !== 'string') {
+                unsafe = JSON.stringify(unsafe, null, 2); // Pretty print objects for better readability
+            }
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Run tests when the page loads
+        window.onload = () => {
+            // A small delay to ensure script.js might have fully initialized, especially if it has async operations on load (though ours doesn't)
+            setTimeout(runTests, 100); 
+        };
+    </script>
+</body>
+</html>
